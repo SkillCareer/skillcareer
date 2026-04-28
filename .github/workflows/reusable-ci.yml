@@ -45,7 +45,7 @@ jobs:
       packages: write
       security-events: write
     env:
-      IMAGE_REF: ghcr.io/${{ github.repository_owner }}/${{ inputs.image_name }}:${{ github.sha }}
+      IMAGE_REF: ghcr.io/${{ toLower(github.repository_owner) }}/${{ inputs.image_name }}:${{ github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

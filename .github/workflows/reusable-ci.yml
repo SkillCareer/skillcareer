@@ -39,8 +39,6 @@ on:
         required: false
       SNYK_TOKEN:
         required: false
-      WEBHOOK_URL:
-        required: false
 
 concurrency:
   group: ci-${{ github.repository }}-${{ github.ref }}

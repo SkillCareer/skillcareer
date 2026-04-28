@@ -44,11 +44,19 @@ jobs:
       contents: read
       packages: write
       security-events: write
-    env:
-      IMAGE_REF: ghcr.io/${{ toLower(github.repository_owner) }}/${{ inputs.image_name }}:${{ github.sha }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # ----------------------------
+      # FIX: build safe lowercase image ref
+      # ----------------------------
+      - name: Set image ref (lowercase safe)
+        shell: bash
+        run: |
+          OWNER_LOWER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_REF=ghcr.io/${OWNER_LOWER}/${{ inputs.image_name }}:${GITHUB_SHA}" >> "$GITHUB_ENV"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -143,7 +151,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "CI SUCCESS: ${{ github.repository }} on ${{ github.ref_name }} (${{ github.sha }}) -> ${{ env.IMAGE_REF }}"
+              "text": "CI SUCCESS: ${{ github.repository }} on ${{ github.ref_name }} (${{ github.sha }}) -> ${IMAGE_REF}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}

@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/YOUR_ORG/skillcareer-infra.git
+    repoURL: https://github.com/SkillCareer/skillcareer.git
     targetRevision: main
     path: helm/skillcareer
     helm:

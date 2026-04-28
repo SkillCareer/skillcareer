@@ -151,7 +151,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "CI SUCCESS: ${{ github.repository }} on ${{ github.ref_name }} (${{ github.sha }}) -> ${IMAGE_REF}"
+              "text": "CI SUCCESS: ${{ github.repository }} on ${{ github.ref_name }} (${{ github.sha }}) -> ${{ env.IMAGE_REF }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}

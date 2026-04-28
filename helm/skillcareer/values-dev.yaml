@@ -1,4 +1,4 @@
-﻿global:
+global:
   environment: dev
 namespace: dev
 storageClass:
@@ -6,3 +6,5 @@ storageClass:
   provisioner: nfs.csi.k8s.io
   server: 10.0.1.176
   share: /var/nfs/general
+apiGateway:
+  tag: v1.1.1

@@ -1,10 +1,11 @@
-﻿global:
+global:
   environment: prod
 namespace: prod
 frontend:
   replicas: 2
 apiGateway:
   replicas: 2
+  tag: v1.1.0
 storageClass:
   name: csi-standard
   provisioner: nfs.csi.k8s.io

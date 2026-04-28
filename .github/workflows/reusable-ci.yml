@@ -32,13 +32,6 @@ on:
         required: false
         type: boolean
         default: true
-    secrets:
-      SONAR_TOKEN:
-        required: false
-      SONAR_HOST_URL:
-        required: false
-      SNYK_TOKEN:
-        required: false
 
 concurrency:
   group: ci-${{ github.repository }}-${{ github.ref }}

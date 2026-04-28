@@ -1,0 +1,84 @@
+name: Promote Image To Dev
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Service to update in values-dev.yaml"
+        required: true
+        type: choice
+        options:
+          - api-gateway
+          - frontend
+          - user-service
+          - career-service
+          - skill-service
+          - roadmap-service
+          - content-service
+          - progress-service
+      image_tag:
+        description: "Image tag already pushed to GHCR (example: sha-abc123 or v1.2.3)"
+        required: true
+        type: string
+
+concurrency:
+  group: dev-promotion-${{ github.event.inputs.service }}
+  cancel-in-progress: false
+
+jobs:
+  update_values_dev:
+    name: Update values-dev.yaml
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Validate Inputs
+        shell: bash
+        env:
+          SERVICE: ${{ github.event.inputs.service }}
+          IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+        run: |
+          if [ -z "$SERVICE" ] || [ -z "$IMAGE_TAG" ]; then
+            echo "service and image_tag are required"
+            exit 1
+          fi
+
+      - name: Update values-dev.yaml
+        uses: mikefarah/yq@v4.44.3
+        env:
+          SERVICE: ${{ github.event.inputs.service }}
+          IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+        with:
+          cmd: |
+            if [ "$SERVICE" = "api-gateway" ]; then
+              yq -i '.apiGateway.tag = strenv(IMAGE_TAG)' helm/skillcareer/values-dev.yaml
+            elif [ "$SERVICE" = "frontend" ]; then
+              yq -i '.frontend.tag = strenv(IMAGE_TAG)' helm/skillcareer/values-dev.yaml
+            else
+              yq -i '
+                .backends = (.backends // [])
+                | if any(.backends[]; .name == strenv(SERVICE))
+                  then (.backends[] | select(.name == strenv(SERVICE)).tag) = strenv(IMAGE_TAG)
+                  else .backends += [{"name": strenv(SERVICE), "tag": strenv(IMAGE_TAG)}]
+                  end
+              ' helm/skillcareer/values-dev.yaml
+            fi
+
+      - name: Commit and Push
+        shell: bash
+        run: |
+          if git diff --quiet -- helm/skillcareer/values-dev.yaml; then
+            echo "No changes detected in values-dev.yaml"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add helm/skillcareer/values-dev.yaml
+          git commit -m "promote(dev): ${{ github.event.inputs.service }} -> ${{ github.event.inputs.image_tag }}"
+          git push origin HEAD:main

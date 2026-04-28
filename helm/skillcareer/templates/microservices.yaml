@@ -1,0 +1,63 @@
+﻿{{- $namespace := .Values.namespace | default .Release.Namespace -}}
+{{- $backends := .Values.backends | default list -}}
+{{- $secretName := ((.Values.secrets | default dict).name) | default "skillcareer-secret" -}}
+{{- range $index, $backend := $backends }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ get $backend "name" | default (printf "backend-%d" $index) }}
+  namespace: {{ $namespace }}
+spec:
+  clusterIP: None
+  selector:
+    app: {{ get $backend "name" | default (printf "backend-%d" $index) }}
+  ports:
+    - port: {{ get $backend "port" | default 5000 }}
+      targetPort: {{ get $backend "port" | default 5000 }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ get $backend "name" | default (printf "backend-%d" $index) }}
+  namespace: {{ $namespace }}
+spec:
+  serviceName: {{ get $backend "name" | default (printf "backend-%d" $index) }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ get $backend "name" | default (printf "backend-%d" $index) }}
+  template:
+    metadata:
+      labels:
+        app: {{ get $backend "name" | default (printf "backend-%d" $index) }}
+    spec:
+      initContainers:
+        - name: wait-for-mongodb
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z mongodb 27017; do sleep 2; done"]
+      containers:
+        - name: {{ get $backend "name" | default (printf "backend-%d" $index) }}
+          image: {{ printf "%s:%s" (get $backend "image" | default "busybox") (get $backend "tag" | default "latest") }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ get $backend "port" | default 5000 }}
+          envFrom:
+            - configMapRef:
+                name: skillcareer-config
+          env:
+            - name: PORT
+              value: {{ (get $backend "port" | default 5000) | quote }}
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: MONGO_URI
+{{- if (get $backend "includeJwt") }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: JWT_SECRET
+{{- end }}
+---
+{{- end }}

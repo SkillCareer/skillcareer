@@ -1,0 +1,39 @@
+﻿{{- $namespace := .Values.namespace | default .Release.Namespace -}}
+{{- $frontend := .Values.frontend | default dict -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ get $frontend "name" | default "frontend-ui" }}
+  namespace: {{ $namespace }}
+spec:
+  replicas: {{ get $frontend "replicas" | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ get $frontend "name" | default "frontend-ui" }}
+  template:
+    metadata:
+      labels:
+        app: {{ get $frontend "name" | default "frontend-ui" }}
+    spec:
+      containers:
+        - name: {{ get $frontend "name" | default "frontend-ui" }}
+          image: {{ printf "%s:%s" (get $frontend "image" | default "suwetha07/skillcareer-frontend") (get $frontend "tag" | default "latest") }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ get $frontend "containerPort" | default 8080 }}
+          envFrom:
+            - configMapRef:
+                name: skillcareer-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ get $frontend "name" | default "frontend-ui" }}
+  namespace: {{ $namespace }}
+spec:
+  selector:
+    app: {{ get $frontend "name" | default "frontend-ui" }}
+  ports:
+    - port: {{ get $frontend "servicePort" | default 80 }}
+      targetPort: {{ get $frontend "containerPort" | default 8080 }}
+  type: ClusterIP
